@@ -1,0 +1,94 @@
+name: Build FiveM
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    defaults:
+      run:
+        shell: cmd
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Enable Git symlinks
+        run: |
+          git config --global core.symlinks true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install setuptools
+        run: |
+          py -m pip install --upgrade pip
+          py -m pip install setuptools
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Yarn
+        run: |
+          npm install -g yarn
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          install: >-
+            git
+            make
+            mingw-w64-x86_64-gcc
+
+      - name: Setup Visual Studio environment
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Update submodules
+        run: |
+          git submodule update --jobs=16 --init
+
+      - name: Install FiveM dependencies
+        run: |
+          yarn install
+
+      - name: Download Chrome dependencies
+        run: |
+          fxd get-chrome
+
+      - name: Prebuild game natives
+        run: |
+          prebuild
+
+      - name: Generate project files
+        run: |
+          fxd gen -game five
+
+      - name: Generate Visual Studio solution
+        run: |
+          fxd vs -game five
+
+      - name: Build solution
+        run: |
+          msbuild code\premake5-built.sln /m /p:Configuration=Release
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fivem-build
+          path: |
+            code\bin\
+            out\
