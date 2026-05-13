@@ -2,11 +2,6 @@ name: Build FiveM
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - master
-  pull_request:
 
 jobs:
   build:
@@ -17,15 +12,11 @@ jobs:
         shell: cmd
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Enable Git symlinks
+      - name: Clone FiveM repository
         run: |
-          git config --global core.symlinks true
+          git clone https://github.com/Gogsi/fivem.git -b wine-win10 -c core.symlinks=true
+          cd fivem
+          git submodule update --jobs=16 --init
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -43,12 +34,13 @@ jobs:
           node-version: "20"
 
       - name: Install Yarn
-        run: |
-          npm install -g yarn
+        run: npm install -g yarn
 
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
+          location: C:\msys64
+          update: true
           install: >-
             git
             make
@@ -57,38 +49,40 @@ jobs:
       - name: Setup Visual Studio environment
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Update submodules
+      - name: Install JS dependencies
         run: |
-          git submodule update --jobs=16 --init
-
-      - name: Install FiveM dependencies
-        run: |
+          cd fivem
           yarn install
 
-      - name: Download Chrome dependencies
+      - name: Download Chrome
         run: |
+          cd fivem
           fxd get-chrome
 
-      - name: Prebuild game natives
+      - name: Prebuild natives
         run: |
+          cd fivem
           prebuild
 
-      - name: Generate project files
+      - name: Generate build files
         run: |
+          cd fivem
           fxd gen -game five
 
       - name: Generate Visual Studio solution
         run: |
+          cd fivem
           fxd vs -game five
 
-      - name: Build solution
+      - name: Build FiveM
         run: |
+          cd fivem
           msbuild code\premake5-built.sln /m /p:Configuration=Release
 
-      - name: Upload build artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: fivem-build
           path: |
-            code\bin\
-            out\
+            fivem\code\bin\
+            fivem\out\
