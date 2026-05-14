@@ -97,7 +97,7 @@ jobs:
       - name: Build FiveM
         run: |
           cd fivem
-          msbuild code\premake5-built.sln /m /p:Configuration=Release
+          msbuild code\build\five\CitizenMP.sln /m /p:Configuration=Release
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -105,4 +105,3 @@ jobs:
           name: fivem-build
           path: |
             fivem\code\bin\
-            fivem\vendor\libnode\bin\
