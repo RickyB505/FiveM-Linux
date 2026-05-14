@@ -97,7 +97,7 @@ jobs:
       - name: Build FiveM
         run: |
           cd fivem
-          msbuild code\build\five\CitizenMP.sln /m /p:Configuration=Release
+          msbuild code\build\five\CitizenMP.sln /m /p:Configuration=Release /p:WindowsTargetPlatformVersion=10.0
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -105,3 +105,4 @@ jobs:
           name: fivem-build
           path: |
             fivem\code\bin\
+            fivem\vendor\libnode\bin\
