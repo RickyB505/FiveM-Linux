@@ -1,22 +1,42 @@
 name: Build FiveM
-
 on:
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: windows-2022
-
     defaults:
       run:
         shell: cmd
-
     steps:
       - name: Clone FiveM repository
         run: |
+          set GIT_LFS_SKIP_SMUDGE=1
           git clone https://github.com/Gogsi/fivem.git -b wine-win10 -c core.symlinks=true
           cd fivem
           git submodule update --jobs=16 --init
+
+      - name: Download libnode binaries
+        shell: pwsh
+        run: |
+          $destDir = "fivem\vendor\libnode\bin"
+          New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+
+          $files = @(
+            "https://github.com/citizenfx/libnode/releases/download/v22.22.0/libnode22.dll",
+            "https://github.com/citizenfx/libnode/releases/download/v22.22.0/libnode22.lib",
+            "https://github.com/citizenfx/libnode/releases/download/v22.22.0/libnode22.pdb",
+            "https://github.com/citizenfx/libnode/releases/download/v22.22.0/libnode22.so",
+            "https://github.com/citizenfx/libnode/releases/download/v22.22.0/libuv.dll",
+            "https://github.com/citizenfx/libnode/releases/download/v22.22.0/libuv.lib",
+            "https://github.com/citizenfx/libnode/releases/download/v22.22.0/libuv.pdb",
+            "https://github.com/citizenfx/libnode/releases/download/v22.22.0/libuv.so"
+          )
+
+          foreach ($url in $files) {
+            $fileName = $url.Split("/")[-1]
+            Write-Host "Downloading $fileName..."
+            Invoke-WebRequest -Uri $url -OutFile "$destDir\$fileName"
+          }
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -85,4 +105,4 @@ jobs:
           name: fivem-build
           path: |
             fivem\code\bin\
-            fivem\out\
+            fivem\vendor\libnode\bin\
